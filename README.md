@@ -1,6 +1,6 @@
 # AI News Agent (n8n Workflow)
 
-An automated AI-powered news assistant built using n8n.
+An automated AI-powered news assistant built using n8n. 
 The workflow generates personalized news queries using an LLM, retrieves relevant articles from Google News RSS feeds, and sends a curated morning news briefing via email.
 
 ## Features
