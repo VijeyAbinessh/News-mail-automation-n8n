@@ -1,0 +1,472 @@
+{
+  "updatedAt": "2026-03-13T17:15:02.946Z",
+  "createdAt": "2026-03-13T15:27:43.109Z",
+  "id": "cqq18vVW9xhiwyen",
+  "name": "Auto News Feed",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const rss = $json.rss || {};\nconst channel = rss.channel?.[0] || rss.channel || {};\nconst items = channel.item || [];\n\nconst topNews = items.slice(0,5);\n\nconst formatted = topNews.map(n => {\n  const title = Array.isArray(n.title) ? n.title[0] : n.title;\n  const link = Array.isArray(n.link) ? n.link[0] : n.link;\n  return `📰 ${title}\\n${link}`;\n}).join(\"\\n\\n\");\n\nreturn [\n  {\n    json: {\n      emailContent: formatted\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        0
+      ],
+      "id": "9d3b391a-2a8e-493c-bfc1-6a408431fc85",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "vijeyabinesshclg11@gmail.com",
+        "subject": "Daily morning news",
+        "message": "=Here are today's top news headlines:\n\n{{$json[\"emailContent\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        0
+      ],
+      "id": "970db62f-fb89-41fb-8d41-9ce3ef64a2d1",
+      "name": "Send a message",
+      "webhookId": "5325559f-313b-406e-90de-a91779d3c097",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "73m2C1KZADHrPE6X",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n \"model\": \"llama-3.3-70b-versatile\",\n \"messages\": [\n   {\n     \"role\": \"system\",\n     \"content\": \"Generate 5 Google News search queries based on the user topic. Return one query per line.\"\n   },\n   {\n     \"role\": \"user\",\n     \"content\": \"News topic: {{ $json.chatInput }}\"\n   }\n ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1264,
+        0
+      ],
+      "id": "6fedbe69-cb1e-46a5-b805-c57c0e9fe314",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const queries = $json.choices[0].message.content\n  .split(\"\\n\")\n  .map(q => q.replace(/\"/g,\"\").trim())\n  .filter(q => q);\n\nreturn queries.map(q => ({\n  json: {\n    query: q,\n    rss: `https://news.google.com/rss/search?q=${encodeURIComponent(q)}`\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "5e9ffbe2-6884-4a33-90eb-0370074f3c73",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "url": "=https://news.google.com/rss/search?q={{ $json.query }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1728,
+        0
+      ],
+      "id": "e8004e92-7abd-4f92-bcc5-f8129ec58c48",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        0
+      ],
+      "id": "86d577ba-6699-44e5-8cf6-c300d3432eaa",
+      "name": "XML"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        944,
+        0
+      ],
+      "id": "8763dcca-2b09-4a46-9a1f-1bad472cf582",
+      "name": "When chat message received",
+      "webhookId": "8ddc69d1-64a4-4024-a009-4604b3f1f0b6"
+    }
+  ],
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "202c2259-6040-46bd-946c-25e5f594cc90",
+  "activeVersionId": "202c2259-6040-46bd-946c-25e5f594cc90",
+  "versionCounter": 150,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-13T15:27:43.120Z",
+      "createdAt": "2026-03-13T15:27:43.120Z",
+      "role": "workflow:owner",
+      "workflowId": "cqq18vVW9xhiwyen",
+      "projectId": "hSNIL06Ce8ThFAcv",
+      "project": {
+        "updatedAt": "2026-03-07T23:11:08.659Z",
+        "createdAt": "2026-03-07T23:10:08.532Z",
+        "id": "hSNIL06Ce8ThFAcv",
+        "name": "VIJEY AIML <vijeyabinesshk.aiml2024@citchennai.net>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "868d64ad-6f04-4f1f-b1dc-134db0c22bac"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": {
+    "updatedAt": "2026-03-13T17:16:35.000Z",
+    "createdAt": "2026-03-13T17:15:02.950Z",
+    "versionId": "202c2259-6040-46bd-946c-25e5f594cc90",
+    "workflowId": "cqq18vVW9xhiwyen",
+    "nodes": [
+      {
+        "parameters": {
+          "jsCode": "const rss = $json.rss || {};\nconst channel = rss.channel?.[0] || rss.channel || {};\nconst items = channel.item || [];\n\nconst topNews = items.slice(0,5);\n\nconst formatted = topNews.map(n => {\n  const title = Array.isArray(n.title) ? n.title[0] : n.title;\n  const link = Array.isArray(n.link) ? n.link[0] : n.link;\n  return `📰 ${title}\\n${link}`;\n}).join(\"\\n\\n\");\n\nreturn [\n  {\n    json: {\n      emailContent: formatted\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2096,
+          0
+        ],
+        "id": "9d3b391a-2a8e-493c-bfc1-6a408431fc85",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {
+          "sendTo": "vijeyabinesshclg11@gmail.com",
+          "subject": "Daily morning news",
+          "message": "=Here are today's top news headlines:\n\n{{$json[\"emailContent\"]}}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          2304,
+          0
+        ],
+        "id": "970db62f-fb89-41fb-8d41-9ce3ef64a2d1",
+        "name": "Send a message",
+        "webhookId": "5325559f-313b-406e-90de-a91779d3c097",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "73m2C1KZADHrPE6X",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/chat/completions",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer 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"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n \"model\": \"llama-3.3-70b-versatile\",\n \"messages\": [\n   {\n     \"role\": \"system\",\n     \"content\": \"Generate 5 Google News search queries based on the user topic. Return one query per line.\"\n   },\n   {\n     \"role\": \"user\",\n     \"content\": \"News topic: {{ $json.chatInput }}\"\n   }\n ]\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          1264,
+          0
+        ],
+        "id": "6fedbe69-cb1e-46a5-b805-c57c0e9fe314",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "jsCode": "const queries = $json.choices[0].message.content\n  .split(\"\\n\")\n  .map(q => q.replace(/\"/g,\"\").trim())\n  .filter(q => q);\n\nreturn queries.map(q => ({\n  json: {\n    query: q,\n    rss: `https://news.google.com/rss/search?q=${encodeURIComponent(q)}`\n  }\n}));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1520,
+          0
+        ],
+        "id": "5e9ffbe2-6884-4a33-90eb-0370074f3c73",
+        "name": "Code in JavaScript2"
+      },
+      {
+        "parameters": {
+          "url": "=https://news.google.com/rss/search?q={{ $json.query }}",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "text"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [
+          1728,
+          0
+        ],
+        "id": "e8004e92-7abd-4f92-bcc5-f8129ec58c48",
+        "name": "HTTP Request1"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.xml",
+        "typeVersion": 1,
+        "position": [
+          1920,
+          0
+        ],
+        "id": "86d577ba-6699-44e5-8cf6-c300d3432eaa",
+        "name": "XML"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [
+          944,
+          0
+        ],
+        "id": "8763dcca-2b09-4a46-9a1f-1bad472cf582",
+        "name": "When chat message received",
+        "webhookId": "8ddc69d1-64a4-4024-a009-4604b3f1f0b6"
+      }
+    ],
+    "connections": {
+      "Code in JavaScript": {
+        "main": [
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code in JavaScript2": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request1": {
+        "main": [
+          [
+            {
+              "node": "XML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "XML": {
+        "main": [
+          [
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "When chat message received": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "VIJEY AIML",
+    "name": "Version 202c2259",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-13T17:16:35.815Z",
+        "id": 1,
+        "workflowId": "cqq18vVW9xhiwyen",
+        "versionId": "202c2259-6040-46bd-946c-25e5f594cc90",
+        "event": "activated",
+        "userId": "868d64ad-6f04-4f1f-b1dc-134db0c22bac"
+      }
+    ]
+  },
+  "scopes": [
+    "workflow:create",
+    "workflow:delete",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:update"
+  ],
+  "checksum": "82ef71e458036340e78901b4af989c464bb9aa10f1d9125a64d3be784e2bc6a9"
+}
